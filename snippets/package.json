@@ -1,0 +1,15 @@
+// Code2snippet : https://codepen.io/mrmlnc/pen/GqMqPg
+
+{
+	"name": "tsoora-snippets",
+	"contributes": {
+		"snippets": [
+			{
+				"language": [
+					"all"
+				],
+				"path": "./mit.json"
+			}
+		]
+	}
+}
