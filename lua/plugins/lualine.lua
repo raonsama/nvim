@@ -5,8 +5,8 @@ return {
     opts = function(_, opts)
       local indent = {
         function()
-          local space_indent = vim.fn.search([[^\s\+]], "nwc")
-          local tab_indent = vim.fn.search([[^\t\+]], "nwc")
+          local space_indent = vim.fn.search([[\v^ +]], "nwc")
+          local tab_indent = vim.fn.search([[\v^\t+]], "nwc")
 
           if space_indent > 0 and tab_indent == 0 then
             return "Spaces"
