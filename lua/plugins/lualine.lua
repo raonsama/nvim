@@ -5,8 +5,8 @@ return {
     opts = function(_, opts)
       local indent = {
         function()
-          local space_indent = vim.fn.search([[^\s\+]], 'nwc')
-          local tab_indent = vim.fn.search([[^\t\+]], 'nwc')
+          local space_indent = vim.fn.search([[^\s\+]], "nwc")
+          local tab_indent = vim.fn.search([[^\t\+]], "nwc")
 
           if space_indent > 0 and tab_indent == 0 then
             return "Spaces"
@@ -16,10 +16,10 @@ return {
             return ""
           end
 
-          local mixed_same_line = vim.fn.search([[\v^(\t+ | +\t)]], 'nwc')
+          local mixed_same_line = vim.fn.search([[\v^(\t+ | +\t)]], "nwc")
 
           if mixed_same_line > 0 then
-            return 'Mixed'
+            return "Mixed"
           end
         end
       }

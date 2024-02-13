@@ -14,7 +14,7 @@ return {
       {
         mode = { "v", "n" },
         "<Leader>m",
-        "<cmd>MCstart<cr>",
+        "<cmd>MCvisual<cr>",
         desc = "Create a multicursors",
       },
     },
