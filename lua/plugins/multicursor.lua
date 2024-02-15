@@ -18,5 +18,5 @@ return {
         desc = "Create a multicursors",
       },
     },
-  }
+  },
 }

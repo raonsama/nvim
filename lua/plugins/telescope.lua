@@ -6,5 +6,5 @@ return {
         layout_strategy = "vertical",
       },
     },
-  }
+  },
 }
