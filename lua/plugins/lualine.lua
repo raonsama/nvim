@@ -34,8 +34,11 @@ return {
           end
           for _, client in ipairs(clients) do
             local filetypes = client.config.filetypes
+            local get_client_name = client.name
+            local char_replace = get_client_name:gsub("_", " ")
+            local client_name = char_replace:gsub("%f[%a].", string.upper)
             if filetypes and vim.fn.index(filetypes, buf_ft) ~= -1 then
-              return client.name
+              return client_name
             end
           end
           return msg
