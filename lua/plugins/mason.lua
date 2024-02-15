@@ -5,6 +5,7 @@ return {
       ui = {
         border = "rounded",
       },
+
       ensure_installed = {
         "vue-language-server",
         "typescript-language-server",
