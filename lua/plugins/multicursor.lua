@@ -1,6 +1,6 @@
 return { -- Multi Cursor
   "mg979/vim-visual-multi",
-  event = "VeryLazy",
+  event = "LazyFile",
   init = function()
     vim.g.VM_theme = "purplegray"
     vim.g.VM_mouse_mappings = 1
