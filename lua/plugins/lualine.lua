@@ -18,9 +18,11 @@ return {
 
           local mixed_same_line = vim.fn.search([[\v^(\t+ | +\t)]], "nwc")
 
-          if mixed_same_line > 0 then
+          if mixed_same_line > 0 or tab_indent > 0 and space_indent > 0 then
             return "Mixed"
           end
+
+          return ""
         end
       }
 
