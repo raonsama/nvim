@@ -6,7 +6,19 @@
         "language": [
           "all"
         ],
-        "path": "./mit.json"
+        "path": "./all.json"
+      },
+      {
+        "language": [
+          "markdown"
+        ],
+        "path": "./markdown.json"
+      },
+      {
+        "language": [
+          "text"
+        ],
+        "path": "./text.json"
       }
     ]
   }

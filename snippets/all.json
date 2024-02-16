@@ -1,0 +1,30 @@
+{
+  "license-header": {
+    "prefix": "license-head",
+    "body": [
+      "// Copyright $CURRENT_YEAR Raymond Ma'ruf <raonsama@proton.me>. All rights reserved.",
+      "// Use of this source code is governed by a MIT-style",
+      "// license that can be found in the LICENSE file."
+    ]
+  },
+  "editorconfig": {
+    "prefix": "edicfg",
+    "body": [
+      "root = true",
+      "",
+      "[*]",
+      "charset = utf-8",
+      "end_of_line = lf",
+      "indent_size = 4",
+      "indent_style = space",
+      "insert_final_newline = true",
+      "trim_trailing_whitespace = true",
+      "",
+      "[*.md]",
+      "trim_trailing_whitespace = false",
+      "",
+      "[*.{go,mod,sum}]",
+      "indent_style = tab"
+    ]
+  }
+}
