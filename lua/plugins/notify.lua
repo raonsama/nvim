@@ -1,3 +1,27 @@
+local function split_length(line, width)
+  local text = {}
+  local next_line
+  while true do
+    if #line == 0 then
+      return text
+    end
+    next_line, line = line:sub(1, width), line:sub(width)
+    text[#text + 1] = next_line
+  end
+end
+
+local function custom_wrap(lines, max_width)
+  local wrapped_lines = {}
+  for _, line in pairs(lines) do
+    local new_lines = split_length(line, max_width)
+    for _, nl in ipairs(new_lines) do
+      nl = nl:gsub("^%s*", " "):gsub("%s*$", " ") 
+      table.insert(wrapped_lines, nl)
+    end
+  end
+  return wrapped_lines
+end
+
 return {
   {
     "rcarriga/nvim-notify",
@@ -5,30 +29,6 @@ return {
       timeout = 3000,
 
       render = function(bufnr, notif, highlights, config)
-        local function split_length(line, width)
-          local text = {}
-          local next_line
-          while true do
-            if #line == 0 then
-              return text
-            end
-            next_line, line = line:sub(1, width), line:sub(width)
-            text[#text + 1] = next_line
-          end
-        end
-
-        local function custom_wrap(lines, max_width)
-          local wrapped_lines = {}
-          for _, line in pairs(lines) do
-            local new_lines = split_length(line, max_width)
-            for _, nl in ipairs(new_lines) do
-              nl = nl:gsub("^%s*", " "):gsub("%s*$", " ") -- ensure padding
-              table.insert(wrapped_lines, nl)
-            end
-          end
-          return wrapped_lines
-        end
-
         local api = vim.api
         local base = require("notify.render.base")
 
