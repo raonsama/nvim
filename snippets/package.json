@@ -1,13 +1,13 @@
 {
-	"name": "raonsama-snippets",
-	"contributes": {
-		"snippets": [
-			{
-				"language": [
-					"all"
-				],
-				"path": "./mit.json"
-			}
-		]
-	}
+  "name": "raonsama-snippets",
+  "contributes": {
+    "snippets": [
+      {
+        "language": [
+          "all"
+        ],
+        "path": "./mit.json"
+      }
+    ]
+  }
 }
