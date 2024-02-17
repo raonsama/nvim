@@ -1,7 +1,6 @@
 return {
   {
     "nvim-neo-tree/neo-tree.nvim",
-    event = "VeryLazy",
     init = function()
       vim.api.nvim_create_autocmd("BufEnter", {
         group = vim.api.nvim_create_augroup("NeoTreeInit", { clear = true }),
