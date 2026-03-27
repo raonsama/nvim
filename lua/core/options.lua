@@ -291,10 +291,10 @@ vim.api.nvim_create_autocmd("User", {
     end
     -- Format: " branch  +added  ~changed  -removed "
     _git_cache = string.format(" %s%s%s%s ",
-      "  " .. gs.head,
-      gs.added   and ("  " .. gs.added)   or "",
-      gs.changed and ("  " .. gs.changed) or "",
-      gs.removed and ("  " .. gs.removed) or ""
+      "  " .. gs.head,
+      gs.added   and ("  " .. gs.added)   or "",
+      gs.changed and ("  " .. gs.changed) or "",
+      gs.removed and ("  " .. gs.removed) or ""
     )
   end,
 })
@@ -308,7 +308,7 @@ end
 -- ╚══════════════════════════════════════════════════════════╝
 _G.my_statusline = function()
   return string.format("%s%s%s%s%s%s%s",
-    "  ",       -- ikon mode (bisa dikembangkan)
+    "  ",       -- ikon mode (bisa dikembangkan)
     " %f",      -- nama file (path relatif)
     " %m",      -- flag modified [+]
     "%=",       -- pemisah kanan

@@ -84,10 +84,10 @@ local function close_buffer()
 end
 
 -- nowait=true: override default Neovim <C-w> (window commands) sepenuhnya
-keymap('n', '<C-w>', close_buffer, { noremap = true, silent = true, nowait = true })
+keymap('n', '<C-q>', close_buffer, { noremap = true, silent = true, nowait = true })
 
 -- Keluar dari semua buffer sekaligus
-keymap('n', '<C-q>', ':qa<CR>', opts)
+keymap('n', '<A-q>', ':qa<CR>', opts)
 
 -- ╔══════════════════════════════════════════════════════════╗
 -- ║              [MANDATORY] NAVIGASI & EDITING              ║
@@ -110,6 +110,10 @@ keymap('n', '<A-Down>', ':m .+1<CR>==',        opts)
 keymap('n', '<A-Up>',   ':m .-2<CR>==',        opts)
 keymap('v', '<A-Down>', ":m '>+1<CR>gv=gv",    opts)
 keymap('v', '<A-Up>',   ":m '<-2<CR>gv=gv",    opts)
+
+-- Pindah antar buffer (Alt + [ / ])
+keymap('n', '<A-[>', ':bprevious<CR>', opts)
+keymap('n', '<A-]>', ':bnext<CR>',     opts)
 
 -- Comment: remap=true agar bisa memanggil mapping plugin (Comment.nvim)
 keymap('n', '<C-_>', 'gcc', { remap = true })   -- Ctrl+/ Normal
