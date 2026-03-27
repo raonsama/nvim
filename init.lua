@@ -1,28 +1,49 @@
 -- ============================================================
 -- NEOVIM CONFIG — init.lua (root)
--- Target: Termux Android, Neovim 0.11+
+-- Target : Termux Android, Neovim 0.11+
 -- Prinsip: Cepat, ringan, tidak ada yang jalan kalau tidak perlu
 -- ============================================================
 
--- --- MATIKAN PROVIDER YANG TIDAK DIPAKAI ---
--- Ini optimasi startup terbesar yang sering dilupakan.
--- Setiap provider yang aktif di-probe saat startup → +40-80ms lag.
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║                  [MANDATORY] PROVIDER                    ║
+-- ║  Matikan provider bahasa yang tidak dipakai.             ║
+-- ║  Setiap provider aktif = +40-80ms lag saat startup       ║
+-- ║  karena Neovim men-probe ketersediaannya satu per satu.  ║
+-- ╚══════════════════════════════════════════════════════════╝
 vim.g.loaded_python3_provider = 0
 vim.g.loaded_ruby_provider    = 0
 vim.g.loaded_perl_provider    = 0
 
--- --- MATIKAN NETRW (harus sebelum plugin manager) ---
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║                  [MANDATORY] NETRW                       ║
+-- ║  Harus dimatikan SEBELUM plugin manager di-load.         ║
+-- ║  Kita pakai nvim-tree sebagai pengganti netrw.           ║
+-- ╚══════════════════════════════════════════════════════════╝
 vim.g.loaded_netrw       = 1
 vim.g.loaded_netrwPlugin = 1
 
--- --- LEADER KEY ---
-vim.g.mapleader = " "
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║                  [MANDATORY] LEADER KEY                  ║
+-- ║  Harus di-set SEBELUM lazy.nvim di-load agar semua       ║
+-- ║  keymap plugin menggunakan leader yang benar.            ║
+-- ╚══════════════════════════════════════════════════════════╝
+vim.g.mapleader      = " "
+vim.g.maplocalleader = "\\"
 
--- --- LOAD KONFIGURASI DASAR ---
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║                  [MANDATORY] CORE CONFIG                 ║
+-- ║  Load options dan keymaps sebelum plugin agar            ║
+-- ║  pengaturan dasar sudah aktif sejak awal.                ║
+-- ╚══════════════════════════════════════════════════════════╝
 require("core.options")
 require("core.keymaps")
 
--- --- BOOTSTRAP LAZY.NVIM ---
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║                  [MANDATORY] LAZY.NVIM                   ║
+-- ║  Plugin manager. Auto-download jika belum ada.           ║
+-- ║  Menggunakan --filter=blob:none agar clone lebih cepat   ║
+-- ║  (tidak download history git yang tidak diperlukan).     ║
+-- ╚══════════════════════════════════════════════════════════╝
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.uv.fs_stat(lazypath) then
   vim.fn.system({
@@ -33,46 +54,69 @@ if not vim.uv.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
--- --- LOAD PLUGINS ---
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║                  [MANDATORY] SETUP LAZY                  ║
+-- ╚══════════════════════════════════════════════════════════╝
 require("lazy").setup("plugins", {
   performance = {
     rtp = {
-      -- Matikan built-in plugin Neovim yang tidak dipakai untuk dev sehari-hari
+      -- Matikan built-in plugin bawaan Neovim yang tidak dipakai.
+      -- Ini mengurangi waktu startup karena Neovim tidak perlu
+      -- men-source file-file ini saat booting.
       disabled_plugins = {
-        "gzip",        -- buka file .gz
-        "tarPlugin",   -- buka file .tar
-        "zipPlugin",   -- buka file .zip
-        "tohtml",      -- konversi buffer ke HTML
-        "tutor",       -- :Tutor interaktif bawaan Neovim
-        "matchit",     -- diganti treesitter
-        "netrwPlugin", -- sudah dimatikan via g.loaded_*
+        "gzip",        -- buka file .gz      → tidak dipakai
+        "tarPlugin",   -- buka file .tar     → tidak dipakai
+        "zipPlugin",   -- buka file .zip     → tidak dipakai
+        "tohtml",      -- konversi ke HTML   → tidak dipakai
+        "tutor",       -- :Tutor interaktif  → tidak dipakai
+        "matchit",     -- match bracket      → diganti treesitter
+        "netrwPlugin", -- file explorer      → diganti nvim-tree
       },
     },
   },
+
+  -- [OPTIONAL] Rocks: disable karena tidak dipakai dan
+  -- memerlukan hererocks (C compiler) yang berat di Termux.
   rocks = {
-    enabled = false,
-    hererocks = false
+    enabled   = false,
+    hererocks = false,
   },
-  -- Matikan auto-check update → tidak ada network call latar belakang di Termux
+
+  -- [OPTIONAL] Matikan auto-check update plugin.
+  -- Di Termux, network call latar belakang bisa mengganggu performa.
+  -- Update manual via <leader>l → Lazy → U
   checker = { enabled = false },
-  -- Matikan notifikasi perubahan file config (hemat CPU saat coding)
+
+  -- [OPTIONAL] Matikan notifikasi saat config file berubah.
+  -- Hemat CPU karena tidak ada file-watcher tambahan.
   change_detection = { notify = false },
 })
 
--- --- BUKA NVIMTREE JIKA ARGUMEN ADALAH DIREKTORI ---
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║             [OPTIONAL] AUTO BUKA NVIM-TREE               ║
+-- ║  Jika Neovim dibuka dengan argumen direktori             ║
+-- ║  (contoh: nvim .), otomatis buka nvim-tree.              ║
+-- ╚══════════════════════════════════════════════════════════╝
 vim.api.nvim_create_autocmd("VimEnter", {
   callback = function(data)
-    local directory = vim.fn.isdirectory(data.file) == 1
-    if directory then
-      vim.cmd.cd(data.file)
-      vim.schedule(function()
-        if vim.api.nvim_buf_is_valid(data.buf) then
-          vim.cmd("bwipeout! " .. data.buf)
-        end
-        vim.cmd("enew")
-        local ok, nt_api = pcall(require, "nvim-tree.api")
-        if ok then nt_api.tree.open() end
-      end)
-    end
+    -- Cek apakah argumen yang diberikan adalah direktori
+    local is_directory = vim.fn.isdirectory(data.file) == 1
+    if not is_directory then return end
+
+    -- Pindah ke direktori tersebut sebagai cwd
+    vim.cmd.cd(data.file)
+
+    -- Schedule agar buffer sempat siap sebelum dimanipulasi
+    vim.schedule(function()
+      -- Hapus buffer direktori (bukan file, tidak perlu ditampilkan)
+      if vim.api.nvim_buf_is_valid(data.buf) then
+        vim.cmd("bwipeout! " .. data.buf)
+      end
+      -- Buat buffer kosong sebagai kanvas utama
+      vim.cmd("enew")
+      -- Buka nvim-tree di sisi kiri
+      local ok, nt_api = pcall(require, "nvim-tree.api")
+      if ok then nt_api.tree.open() end
+    end)
   end,
 })
