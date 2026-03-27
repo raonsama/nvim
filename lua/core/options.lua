@@ -4,12 +4,19 @@
 local opt = vim.opt
 
 -- --- PERFORMANCE & UNDO ---
-opt.swapfile   = false
-opt.backup     = false
-opt.undofile   = true
-opt.undolevels = 1000
-opt.shada      = "'20,<50,s10,h"
-opt.updatetime = 1000
+opt.swapfile      = false
+opt.backup        = false
+opt.undofile      = true
+opt.undolevels    = 1000
+opt.shada         = "'20,<50,s10,h"
+opt.updatetime    = 1000
+opt.timeoutlen    = 300
+opt.ttimeoutlen   = 10
+opt.scrolloff     = 8
+opt.sidescrolloff = 8
+opt.pumheight     = 8
+opt.redrawtime    = 1500
+opt.foldenable    = false
 
 -- --- PERLINDUNGAN FILE BESAR ---
 -- Baris panjang (minified JS/CSS) bisa freeze rendering karena Neovim
@@ -66,7 +73,7 @@ opt.termguicolors  = true
 opt.splitright     = true
 opt.splitbelow     = true
 opt.mouse          = "a"
-opt.clipboard      = "unnamedplus"
+opt.clipboard      = ""
 opt.laststatus     = 3
 opt.showmode       = false
 opt.cmdheight      = 0
@@ -77,6 +84,17 @@ opt.shortmess:append("cI")
 opt.tabstop    = 4
 opt.shiftwidth = 4
 opt.expandtab  = true
+
+-- --- YANK ---
+vim.api.nvim_create_autocmd("TextYankPost", {
+  callback = function()
+    -- Sync ke OS clipboard hanya saat yank eksplisit (bukan delete/change)
+    local event = vim.v.event
+    if event.operator == "y" and event.regname == "" then
+      vim.fn.setreg("+", vim.fn.getreg('"'))
+    end
+  end,
+})
 
 -- --- SMART AUTO-NEW FILE ---
 vim.api.nvim_create_autocmd("BufDelete", {
@@ -108,14 +126,25 @@ vim.api.nvim_create_autocmd("BufWinEnter", {
 })
 
 -- --- FUNGSI HELPER GIT STATUS ---
+local _git_cache = ""
+vim.api.nvim_create_autocmd("User", {
+  pattern  = "GitSignsUpdate",
+  callback = function()
+    local gs = vim.b.gitsigns_status_dict
+    if not gs or gs.head == "" then
+      _git_cache = ""
+      return
+    end
+    _git_cache = string.format(" %s%s%s%s ",
+      "  " .. gs.head,
+      gs.added   and ("  " .. gs.added)   or "",
+      gs.changed and ("  " .. gs.changed) or "",
+      gs.removed and ("  " .. gs.removed) or ""
+    )
+  end,
+})
 local function git_status()
-  local gs = vim.b.gitsigns_status_dict
-  if not gs or gs.head == "" then return "" end
-  local branch  = "  " .. gs.head
-  local added   = gs.added   and ("  " .. gs.added)   or ""
-  local changed = gs.changed and ("  " .. gs.changed) or ""
-  local removed = gs.removed and ("  " .. gs.removed) or ""
-  return string.format("%s %s%s%s ", branch, added, changed, removed)
+  return _git_cache
 end
 
 -- --- CUSTOM STATUSLINE ---

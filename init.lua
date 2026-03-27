@@ -49,6 +49,10 @@ require("lazy").setup("plugins", {
       },
     },
   },
+  rocks = {
+    enabled = false,
+    hererocks = false
+  },
   -- Matikan auto-check update → tidak ada network call latar belakang di Termux
   checker = { enabled = false },
   -- Matikan notifikasi perubahan file config (hemat CPU saat coding)

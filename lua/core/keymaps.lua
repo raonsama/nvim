@@ -19,29 +19,54 @@ keymap('i', '<C-s>', function()
 end, opts)
 
 -- --- 2. SMART CLOSE & QUIT ---
-keymap('n', '<C-w>', function()
+local function close_buffer()
     local bufnr = vim.api.nvim_get_current_buf()
     local is_modified = vim.api.nvim_get_option_value("modified", { buf = bufnr })
-    local bufs = vim.fn.getbufinfo({ buflisted = 1 })
+
+    local function do_close()
+        local next_buf = nil
+        -- Cari buffer file lain yang sedang terbuka
+        for _, buf in ipairs(vim.fn.getbufinfo({ buflisted = 1 })) do
+            if buf.bufnr ~= bufnr then
+                local buftype = vim.api.nvim_get_option_value("buftype", { buf = buf.bufnr })
+                -- Prioritaskan pindah ke file normal (bukan terminal)
+                if buftype == "" then
+                    next_buf = buf.bufnr
+                    break
+                end
+                -- Fallback jika tidak ada opsi lain
+                if next_buf == nil then next_buf = buf.bufnr end
+            end
+        end
+
+        if next_buf then
+            -- 1. Pindah ke buffer selanjutnya TERLEBIH DAHULU agar window layout tidak rusak
+            vim.cmd("buffer " .. next_buf)
+        else
+            -- 2. Jika ini adalah file terakhir, buat buffer kosong di window ini
+            vim.cmd("enew")
+        end
+
+        -- 3. Baru hapus buffer aslinya di background
+        pcall(function()
+            vim.api.nvim_buf_delete(bufnr, { force = true })
+        end)
+    end
 
     if is_modified then
         local choice = vim.fn.confirm("Simpan perubahan?", "&Yes\n&No\n&Cancel", 1)
-        if choice == 1 then smart_save(); vim.cmd("silent! bdelete")
-        elseif choice == 2 then vim.cmd("silent! bdelete!") end
-        return
-    end
-
-    if #bufs <= 1 then
-        vim.cmd("enew")
-        pcall(function()
-            if vim.api.nvim_buf_is_valid(bufnr) then
-                vim.api.nvim_buf_delete(bufnr, { force = true })
-            end
-        end)
+        if choice == 1 then
+            smart_save()
+            do_close()
+        elseif choice == 2 then
+            do_close()
+        end
     else
-        vim.cmd("silent! bdelete")
+        do_close()
     end
-end, opts)
+end
+
+keymap('n', '<C-w>', close_buffer, { noremap = true, silent = true, nowait = true })
 keymap('n', '<C-q>', ':qa<CR>', opts)
 
 -- --- 3. NAVIGASI & EDITING (Sublime Style) ---
@@ -111,3 +136,9 @@ end
 keymap('n', '<C-t>', '<cmd>lua toggle_terminal()<CR>', opts)
 keymap('t', '<C-t>', [[<C-\><C-n><cmd>lua toggle_terminal()<CR>]], opts)
 keymap('t', '<Esc>', [[<C-\><C-n>]], opts)
+
+-- --- 7 PLUGIN MANAGER & INSTALLER ---
+-- Spasi + l untuk buka menu Lazy (Update/Install plugin)
+keymap('n', '<leader>l', '<cmd>Lazy<CR>', opts)
+-- Spasi + m untuk buka menu Mason (Install LSP/Linter/Formatter)
+keymap('n', '<leader>m', '<cmd>Mason<CR>', opts)

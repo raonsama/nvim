@@ -34,29 +34,40 @@ return {
     end,
   },
 
-  -- --- TREESITTER: lazy via event ---
+   -- --- TREESITTER: lazy via event ---
   {
     "nvim-treesitter/nvim-treesitter",
     build  = ":TSUpdate",
-    event  = { "BufReadPost", "BufNewFile" },  -- load setelah buffer dibaca
+    event  = { "BufReadPost", "BufNewFile" },
     config = function()
-      require("nvim-treesitter").setup()
+      require("nvim-treesitter").setup({
+        ensure_installed = {
+          "php", "typescript", "tsx", "javascript",
+          "html", "css", "lua", "json", "bash", "yaml", "xml",
+        },
+      })
 
-      require("nvim-treesitter").install({
+      -- Tambah filetype lain sesuai kebutuhan
+      local ts_filetypes = {
         "php", "typescript", "tsx", "javascript",
         "html", "css", "lua", "json", "bash", "yaml", "xml",
-      }, { summary = false })
+      }
 
       vim.api.nvim_create_autocmd("FileType", {
         group    = vim.api.nvim_create_augroup("ts_highlight", { clear = true }),
-        pattern  = { "*" },
-        callback = function() pcall(vim.treesitter.start) end,
+        pattern  = ts_filetypes,
+        callback = function(ev)
+          -- Jangan jalankan di buffer special (NvimTree, terminal, dll)
+          if vim.bo[ev.buf].buftype ~= "" then return end
+          pcall(vim.treesitter.start, ev.buf)
+        end,
       })
 
       vim.api.nvim_create_autocmd("FileType", {
         group   = vim.api.nvim_create_augroup("ts_indent", { clear = true }),
         pattern = { "php", "typescript", "tsx", "javascript", "html", "css", "lua" },
-        callback = function()
+        callback = function(ev)
+          if vim.bo[ev.buf].buftype ~= "" then return end
           vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
         end,
       })
@@ -76,18 +87,47 @@ return {
       "hrsh7th/cmp-path",
       "L3MON4D3/LuaSnip",
       "saadparwaiz1/cmp_luasnip",
+      -- "roobert/tailwindcss-colorizer-cmp.nvim",
     },
     config = function()
       require("mason").setup({ ui = { border = "rounded" } })
+      vim.lsp.config('intelephense', {
+         settings = {
+           intelephense = {
+             files = {
+               exclude = {
+                 "**/.git/**",
+                 "**/node_modules/**",
+                 "**/storage/**",
+                 "**/public/build/**",
+                 "**/public/hot/**",
+                 "**/*.min.js",
+                 "**/*.min.css",
+               },
+               -- Naikkan maxSize agar file besar tidak di-skip tapi juga tidak freeze
+               maxSize = 1000000,
+             },
+             -- Matikan fitur yang tidak dibutuhkan di Termux/ARM
+             telemetry = { enabled = false },
+             completion = {
+               fullyQualifyGlobalConstantsAndFunctions = false,
+             },
+           },
+         },
+      })
 
       -- Capabilities global (wildcard '*' berlaku ke semua LSP)
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
       vim.lsp.config('*', { capabilities = capabilities })
 
       require("mason-lspconfig").setup({
-        ensure_installed = { "intelephense", "ts_ls", "tailwindcss", "emmet_ls" },
+        ensure_installed = { "intelephense", "ts_ls", "tailwindcss" },
         -- automatic_enable = true  ← DEFAULT, tidak perlu ditulis
       })
+
+      -- require("tailwindcss-colorizer-cmp").setup({
+      --   color_square_width = 2,
+      -- })
 
       -- --- AUTOCOMPLETE (CMP) dengan performa tuning ---
       local cmp = require("cmp")
@@ -95,6 +135,9 @@ return {
         snippet = {
           expand = function(args) require('luasnip').lsp_expand(args.body) end,
         },
+        -- formatting = {
+        --   format = require("tailwindcss-colorizer-cmp").formatter
+        -- },
         -- Performance: batasi jumlah item yang diproses CMP
         performance = {
           debounce          = 60,    -- ms tunggu setelah ketikan sebelum query (default 60)
@@ -138,13 +181,39 @@ return {
 
   -- --- TELESCOPE: lazy, load via keymap ---
   {
-    "nvim-telescope/telescope.nvim",
-    dependencies = "nvim-lua/plenary.nvim",
-    cmd          = "Telescope",
-    keys = {
-      { "<C-p>", "<cmd>Telescope find_files<CR>" },
-      { "<C-f>", "<cmd>Telescope live_grep<CR>" },
-    },
+  "nvim-telescope/telescope.nvim",
+  dependencies = "nvim-lua/plenary.nvim",
+  cmd  = "Telescope",
+  keys = {
+    { "<C-p>", "<cmd>Telescope find_files<CR>" },
+    { "<C-f>", "<cmd>Telescope live_grep<CR>" },
+  },
+  config = function()
+    require("telescope").setup({
+      defaults = {
+        -- Jangan index folder berat
+        file_ignore_patterns = {
+          "vendor/.*", "node_modules/.*", "%.git/.*",
+          "storage/.*", "public/build/.*", "%.min%.js",
+          "%.min%.css", "%.lock",
+        },
+        -- Batasi hasil agar tidak overwhelm ARM CPU
+        layout_strategy   = "vertical",
+        layout_config     = { height = 0.8, width = 0.7 },
+        -- Kurangi preview overhead
+        dynamic_preview_title = true,
+      },
+      pickers = {
+        find_files = {
+          -- fd jauh lebih cepat dari find di Termux
+          find_command = { "fd", "--type", "f", "--hidden", "--strip-cwd-prefix" },
+        },
+        live_grep = {
+          additional_args = { "--max-count=1" },  -- 1 match per file cukup untuk navigasi
+        },
+      },
+    })
+  end,
   },
 
   -- --- SPECTRE: lazy, load via keymap ---
@@ -166,5 +235,24 @@ return {
     "windwp/nvim-autopairs",
     event  = "InsertEnter",
     config = function() require("nvim-autopairs").setup {} end,
+  },
+  {
+    "kdheepak/lazygit.nvim",
+    lazy = true,
+    cmd = {
+      "LazyGit",
+      "LazyGitConfig",
+      "LazyGitCurrentFile",
+      "LazyGitFilter",
+      "LazyGitFilterCurrentFile",
+    },
+    -- Opsional: Menambahkan dependensi agar icon muncul (jika pakai nvim-web-devicons)
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+    },
+    -- Membuat shortcut keyboard
+    keys = {
+      { "<leader>gg", "<cmd>LazyGit<cr>", desc = "LazyGit" },
+    },
   },
 }
