@@ -112,16 +112,22 @@ keymap('n', 'K', vim.lsp.buf.hover, opts)
 keymap('n', '<leader>h', function() require('spectre').toggle() end, opts)
 
 -- --- 6. INTEGRATED TERMINAL ---
-local T = { buf = nil, win = nil }
+local M = {}
+M.term_buf = nil
+M.term_win = nil
 
 local function toggle_terminal()
-  if T.win and vim.api.nvim_win_is_valid(T.win) then
-    local cur = vim.api.nvim_get_current_win()
-    if cur ~= T.win then
-      vim.api.nvim_set_current_win(T.win)
+  -- Validasi window DAN buffer sekaligus
+  if M.term_win and vim.api.nvim_win_is_valid(M.term_win) then
+    -- Pastikan tidak close window saat sudah di window lain
+    local cur_win = vim.api.nvim_get_current_win()
+    if cur_win ~= M.term_win then
+      -- Kalau fokus bukan di terminal, fokus ke terminal dulu
+      vim.api.nvim_set_current_win(M.term_win)
     else
-
-      T.win = nil
+      -- Kalau sudah di terminal, baru close
+      vim.api.nvim_win_close(M.term_win, true)
+      M.term_win = nil
     end
     return
   end
@@ -129,28 +135,27 @@ local function toggle_terminal()
   vim.cmd("botright split")
   vim.cmd("resize 10")
 
-  if T.buf and vim.api.nvim_buf_is_valid(T.buf) then
-    vim.api.nvim_set_current_buf(T.buf)
+  if M.term_buf and vim.api.nvim_buf_is_valid(M.term_buf) then
+    vim.api.nvim_set_current_buf(M.term_buf)
   else
     vim.cmd("term")
-    T.buf = vim.api.nvim_get_current_buf()
+    M.term_buf = vim.api.nvim_get_current_buf()
     vim.wo.number         = false
     vim.wo.relativenumber = false
     vim.wo.signcolumn     = "no"
   end
 
-  T.win = vim.api.nvim_get_current_win()
+  M.term_win = vim.api.nvim_get_current_win()
 end
 
-keymap('n', '<A-t>', toggle_terminal, { noremap = true, silent = true, nowait = true })
+keymap('n', '<A-t>', toggle_terminal, { noremap = true, silent = true })
 keymap('t', '<A-t>', function()
   vim.api.nvim_feedkeys(
     vim.api.nvim_replace_termcodes('<C-\\><C-n>', true, false, true),
     'n', false
   )
   vim.schedule(toggle_terminal)
-end, { noremap = true, silent = true, nowait = true })
-keymap('t', '<Esc>', [[<C-\><C-n>]], opts)
+end, { noremap = true, silent = true })
 
 -- --- 7 PLUGIN MANAGER & INSTALLER ---
 -- Spasi + l untuk buka menu Lazy (Update/Install plugin)
