@@ -72,11 +72,33 @@ opt.cursorline     = true
 opt.termguicolors  = true
 opt.splitright     = true
 opt.splitbelow     = true
-opt.mouse          = "a"
+opt.mouse          = "nv"
 opt.clipboard      = ""
 opt.laststatus     = 3
 opt.showmode       = false
-opt.cmdheight      = 0
+
+-- --- CMDLINE: SEMBUNYI DEFAULT, MUNCUL SAAT DIBUTUHKAN ---
+opt.cmdheight = 0  -- sembunyikan saat idle
+
+-- Muncul saat mengetik perintah (:, /, ?, !)
+vim.api.nvim_create_autocmd("CmdlineEnter", {
+  callback = function() vim.opt.cmdheight = 1 end,
+})
+
+-- Sembunyi lagi setelah perintah selesai
+vim.api.nvim_create_autocmd("CmdlineLeave", {
+  callback = function()
+    vim.defer_fn(function()
+      vim.opt.cmdheight = 0
+    end, 100)  -- delay kecil agar output sempat terbaca
+  end,
+})
+
+-- Muncul saat ada pesan error/warning penting
+vim.api.nvim_create_autocmd("ModeChanged", {
+  pattern  = "*:c",  -- masuk command mode
+  callback = function() vim.opt.cmdheight = 1 end,
+})
 
 opt.shortmess:append("cI")
 
@@ -161,4 +183,29 @@ _G.my_statusline = function()
 end
 opt.statusline = "%!v:lua.my_statusline()"
 
+-- --- FIX RESIZE GAP (Termux font resize) ---
+vim.api.nvim_create_autocmd("VimResized", {
+  callback = function()
+    vim.cmd("wincmd =")
+    vim.defer_fn(function()
+      vim.opt.cmdheight = 0
+      vim.cmd("redraw!")
+    end, 50)
+  end,
+})
+
 vim.filetype.add({ extension = { blade = "html" } })
+
+-- --- Matikan saat insert, nyalakan kembali saat keluar ---
+vim.api.nvim_create_autocmd("InsertEnter", {
+  callback = function()
+    vim.opt.relativenumber = false
+    vim.opt.cursorline     = false
+  end,
+})
+vim.api.nvim_create_autocmd("InsertLeave", {
+  callback = function()
+    vim.opt.relativenumber = true
+    vim.opt.cursorline     = true
+  end,
+})

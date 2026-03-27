@@ -171,7 +171,7 @@ return {
       require("nvim-tree").setup({
         hijack_netrw = false,
         sync_root_with_cwd = true,
-        view = { adaptive_size = true },
+        view = { adaptive_size = false, width = 30 },
         renderer = { group_empty = true },
         filters = { dotfiles = true },
         update_focused_file = { enable = true, update_root = true },

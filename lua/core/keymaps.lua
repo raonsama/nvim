@@ -112,29 +112,44 @@ keymap('n', 'K', vim.lsp.buf.hover, opts)
 keymap('n', '<leader>h', function() require('spectre').toggle() end, opts)
 
 -- --- 6. INTEGRATED TERMINAL ---
-_G.term_buf = nil
-_G.term_win = nil
-_G.toggle_terminal = function()
-  if _G.term_win and vim.api.nvim_win_is_valid(_G.term_win) then
-    vim.api.nvim_win_close(_G.term_win, true)
-    _G.term_win = nil
+local T = { buf = nil, win = nil }
+
+local function toggle_terminal()
+  if T.win and vim.api.nvim_win_is_valid(T.win) then
+    local cur = vim.api.nvim_get_current_win()
+    if cur ~= T.win then
+      vim.api.nvim_set_current_win(T.win)
+    else
+
+      T.win = nil
+    end
     return
   end
+
   vim.cmd("botright split")
   vim.cmd("resize 10")
-  if _G.term_buf and vim.api.nvim_buf_is_valid(_G.term_buf) then
-    vim.api.nvim_set_current_buf(_G.term_buf)
+
+  if T.buf and vim.api.nvim_buf_is_valid(T.buf) then
+    vim.api.nvim_set_current_buf(T.buf)
   else
     vim.cmd("term")
-    _G.term_buf = vim.api.nvim_get_current_buf()
-    vim.wo.number = false
+    T.buf = vim.api.nvim_get_current_buf()
+    vim.wo.number         = false
     vim.wo.relativenumber = false
-    vim.wo.signcolumn = "no"
+    vim.wo.signcolumn     = "no"
   end
-  _G.term_win = vim.api.nvim_get_current_win()
+
+  T.win = vim.api.nvim_get_current_win()
 end
-keymap('n', '<C-t>', '<cmd>lua toggle_terminal()<CR>', opts)
-keymap('t', '<C-t>', [[<C-\><C-n><cmd>lua toggle_terminal()<CR>]], opts)
+
+keymap('n', '<A-t>', toggle_terminal, { noremap = true, silent = true, nowait = true })
+keymap('t', '<A-t>', function()
+  vim.api.nvim_feedkeys(
+    vim.api.nvim_replace_termcodes('<C-\\><C-n>', true, false, true),
+    'n', false
+  )
+  vim.schedule(toggle_terminal)
+end, { noremap = true, silent = true, nowait = true })
 keymap('t', '<Esc>', [[<C-\><C-n>]], opts)
 
 -- --- 7 PLUGIN MANAGER & INSTALLER ---
