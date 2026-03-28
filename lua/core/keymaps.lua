@@ -13,9 +13,14 @@ local opts   = { noremap = true, silent = true }
 local function smart_save()
   if vim.fn.expand('%') == "" then
     local filename = vim.fn.input("Save as: ")
-    if filename ~= "" then vim.cmd("write " .. filename) end
+    if filename ~= "" then
+      vim.cmd("write " .. filename)
+      return true
+    end
+    return false  -- user cancel → batalkan close juga
   else
     vim.cmd("write")
+    return true
   end
 end
 
@@ -72,8 +77,8 @@ local function close_buffer()
     -- File belum disimpan → tanya ke user
     local choice = vim.fn.confirm("Simpan perubahan?", "&Yes\n&No\n&Cancel", 1)
     if choice == 1 then
-      smart_save()
-      do_close()
+      local saved = smart_save()
+      if saved then do_close() end
     elseif choice == 2 then
       do_close()
     end
@@ -186,9 +191,9 @@ local function toggle_terminal()
     vim.cmd("term")
     T.buf = vim.api.nvim_get_current_buf()
     -- Matikan dekorasi yang tidak perlu di terminal
-    vim.wo.number         = false
-    vim.wo.relativenumber = false
-    vim.wo.signcolumn     = "no"
+    -- vim.wo.number         = false
+    -- vim.wo.relativenumber = false
+    -- vim.wo.signcolumn     = "no"
   end
 
   T.win = vim.api.nvim_get_current_win()

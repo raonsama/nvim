@@ -121,8 +121,6 @@ return {
           if ts_have(ev.buf, lang, "indents") then
             vim.bo[ev.buf].indentexpr =
               "v:lua.require'nvim-treesitter'.indentexpr()"
-          else
-            vim.bo[ev.buf].indentexpr = ""  -- aktifkan smartindent sebagai fallback
           end
         end,
       })
@@ -152,10 +150,15 @@ return {
       -- Setup Mason (UI untuk install LSP, linter, formatter)
       require("mason").setup({ ui = { border = "rounded" } })
 
+      -- ── CAPABILITIES (berlaku untuk SEMUA LSP) ───────────────
+      -- BUG FIX: capabilities HARUS di-set PERTAMA sebelum config server
+      -- manapun. Jika di-set setelah vim.lsp.config('intelephense',...),
+      -- intelephense bisa start tanpa capabilities CMP → autocomplete mati.
+      -- Wildcard '*' = base config untuk semua LSP yang akan attach.
+      local capabilities = require('cmp_nvim_lsp').default_capabilities()
+      vim.lsp.config('*', { capabilities = capabilities })
+
       -- ── KONFIGURASI INTELEPHENSE (PHP LSP) ──────────────────
-      -- BUG FIX: vendor/** harus di-exclude!
-      -- Tanpa ini, intelephense akan mengindeks ribuan file di vendor/
-      -- → freeze selama menit-menit saat buka project Laravel/Symfony.
       vim.lsp.config('intelephense', {
         settings = {
           intelephense = {
@@ -163,31 +166,50 @@ return {
               exclude = {
                 "**/.git/**",           -- git internals
                 "**/node_modules/**",   -- JS dependencies
-                "**/vendor/**",         -- PHP dependencies (PALING PENTING!)
-                "**/storage/**",        -- Laravel storage
-                "**/public/build/**",   -- asset build output
-                "**/public/hot/**",     -- Vite HMR files
-                "**/*.min.js",          -- JS minified
-                "**/*.min.css",         -- CSS minified
+                -- !! vendor TIDAK di-exclude sepenuhnya !!
+                -- Sebelumnya vendor di-exclude → intelephense tidak bisa
+                -- resolve tipe dari package (Laravel facades, Carbon, dll)
+                -- → muncul error "undefined type".
+                -- Solusi: exclude hanya subfolder yang benar-benar tidak berguna.
+                "**/vendor/**/test*/**",      -- test suite vendor (tidak dipakai)
+                "**/vendor/**/Tests/**",      -- test suite vendor
+                "**/vendor/**/spec/**",       -- spec vendor
+                "**/storage/**",              -- Laravel storage
+                "**/public/build/**",         -- asset build output
+                "**/public/hot/**",           -- Vite HMR files
+                "**/*.min.js",
+                "**/*.min.css",
               },
-              -- maxSize: batas ukuran file yang di-index (bytes).
-              -- Naikkan sedikit agar file besar yang valid tetap ter-index.
               maxSize = 1000000,
             },
-            telemetry = { enabled = false },  -- matikan telemetry (hemat network)
+            telemetry  = { enabled = false },
             completion = {
-              -- Jangan tulis namespace penuh untuk konstanta global → lebih ringkas
               fullyQualifyGlobalConstantsAndFunctions = false,
+            },
+            -- BUG FIX: tambahkan stubs untuk framework umum.
+            -- Stubs = type definition bawaan intelephense untuk package populer.
+            -- Ini yang menyelesaikan "undefined type" untuk Laravel, Carbon, dll
+            -- TANPA perlu intelephense membaca seluruh file vendor.
+            stubs = {
+              "apache", "bcmath", "bz2", "calendar", "com_dotnet",
+              "Core", "ctype", "curl", "date", "dba", "dom",
+              "enchant", "exif", "FFI", "fileinfo", "filter", "fpm",
+              "ftp", "gd", "gettext", "gmp", "hash", "iconv", "imap",
+              "intl", "json", "ldap", "libxml", "mbstring", "meta",
+              "mysqli", "oci8", "odbc", "openssl", "pcntl", "pcre",
+              "PDO", "pdo_ibm", "pdo_mysql", "pdo_pgsql", "pdo_sqlite",
+              "pgsql", "Phar", "posix", "pspell", "random", "readline",
+              "Reflection", "session", "shmop", "SimpleXML", "snmp",
+              "soap", "sockets", "sodium", "SPL", "sqlite3", "standard",
+              "superglobals", "sysvmsg", "sysvsem", "sysvshm", "tidy",
+              "tokenizer", "xml", "xmlreader", "xmlrpc", "xmlwriter",
+              "xsl", "Zend OPcache", "zip", "zlib",
+              -- Laravel & framework stubs
+              "wordpress", "phpunit",
             },
           },
         },
       })
-
-      -- ── CAPABILITIES (berlaku untuk SEMUA LSP) ───────────────
-      -- Beritahu LSP fitur autocomplete apa yang didukung Neovim.
-      -- Wildcard '*' = semua LSP yang attach akan dapat capabilities ini.
-      local capabilities = require('cmp_nvim_lsp').default_capabilities()
-      vim.lsp.config('*', { capabilities = capabilities })
 
       -- ── AUTO-INSTALL LSP ─────────────────────────────────────
       -- Mason akan auto-install LSP yang belum ada saat pertama buka.
@@ -212,12 +234,22 @@ return {
         },
 
         mapping = cmp.mapping.preset.insert({
-          ['<C-Space>'] = cmp.mapping.complete(),              -- paksa buka popup
-          ['<CR>']      = cmp.mapping.confirm({ select = true }), -- konfirmasi pilihan
-          ['<Tab>']     = cmp.mapping.select_next_item(),      -- navigasi bawah
-          ['<S-Tab>']   = cmp.mapping.select_prev_item(),      -- navigasi atas
-          ['<C-e>']     = cmp.mapping.abort(),                 -- tutup popup
-          ['<Esc>']     = cmp.mapping.abort(),                 -- tutup popup (alternatif)
+          ['<C-Space>'] = cmp.mapping.complete(),
+          -- FIX: gunakan cmp.mapping dengan fallback ke autopairs.
+          -- select=false agar Enter hanya konfirmasi jika ada item yang
+          -- dipilih aktif — jika popup tidak aktif, Enter diteruskan ke
+          -- autopairs sehingga indent {} tetap bekerja.
+          ['<CR>'] = cmp.mapping(function(fallback)
+            if cmp.visible() and cmp.get_selected_entry() then
+              cmp.confirm({ select = false })
+            else
+              fallback()  -- teruskan ke autopairs → indent {} bekerja
+            end
+          end, { "i", "s" }),
+          ['<Tab>']   = cmp.mapping.select_next_item(),   -- navigasi bawah
+          ['<S-Tab>'] = cmp.mapping.select_prev_item(),   -- navigasi atas
+          ['<C-e>']   = cmp.mapping.abort(),              -- tutup popup
+          ['<Esc>']   = cmp.mapping.abort(),              -- tutup popup (alternatif)
         }),
 
         -- Sources dikelompokkan: group 1 dicoba dulu, jika kosong baru group 2.
@@ -352,7 +384,13 @@ return {
   {
     "windwp/nvim-autopairs",
     event  = "InsertEnter",
-    config = function() require("nvim-autopairs").setup() end,
+    config = function()
+      require("nvim-autopairs").setup()
+      -- Integrasi dengan nvim-cmp: saat completion di-confirm,
+      -- autopairs ikut handle bracket & indent yang menyertai.
+        local cmp_autopairs = require('nvim-autopairs.completion.cmp')
+        require('cmp').event:on('confirm_done', cmp_autopairs.on_confirm_done())
+      end,
   },
 
   -- ╔════════════════════════════════════════════════════════╗
@@ -392,7 +430,13 @@ return {
     "stevearc/conform.nvim",
     -- Lazy: load hanya saat keymap <leader>f dipanggil (bukan BufWritePre)
     -- karena format on save dimatikan → tidak perlu load saat simpan file.
-    keys  = { { "<leader>f", desc = "Format file" } },
+    keys = {
+      {
+        "<leader>f",
+        function() require("conform").format({ async = true, lsp_fallback = true }) end,
+        desc = "Format file",
+      },
+    },
     config = function()
       require("conform").setup({
 

@@ -69,7 +69,9 @@ vim.api.nvim_create_autocmd("LspAttach", {
   callback = function(args)
     if vim.b[args.buf].large_file then
       vim.schedule(function()
-        vim.lsp.buf_detach_client(args.buf, args.data.client_id)
+        -- vim.lsp.buf_detach_client(args.buf, args.data.client_id)
+        local client = vim.lsp.get_client_by_id(args.data.client_id)
+        if client then client:stop() end
       end)
     end
   end,
@@ -251,9 +253,17 @@ vim.api.nvim_create_autocmd("FocusLost", {
 -- ║  BufWinEnter dipilih (bukan BufEnter+WinEnter) agar      ║
 -- ║  startinsert tidak dipanggil dua kali.                   ║
 -- ╚══════════════════════════════════════════════════════════╝
-vim.api.nvim_create_autocmd("BufWinEnter", {
+vim.api.nvim_create_autocmd("TermOpen", {
   pattern  = "term://*",
   callback = function() vim.cmd("startinsert") end,
+})
+
+vim.api.nvim_create_autocmd("TermOpen", {
+  callback = function()
+    vim.opt_local.number         = false
+    vim.opt_local.relativenumber = false
+    vim.opt_local.signcolumn     = "no"
+  end,
 })
 
 -- ╔══════════════════════════════════════════════════════════╗
