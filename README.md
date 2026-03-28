@@ -1,7 +1,8 @@
 # 🏛️ Artefak — Neovim Config
 > Konfigurasi Neovim minimalis, cepat, dan stabil untuk **Termux / Android**.  
-> Dioptimalkan khusus untuk perangkat ARM (Huawei MatePad, tablet Android, dll).
-> Config ini dibuat menggunakan **[Claude AI](https://claude.ai/)**.
+> Dioptimalkan khusus untuk perangkat ARM (Huawei MatePad, tablet Android, dll).  
+> Config ini dibuat menggunakan **[Claude AI](https://claude.ai/)**  
+> dengan **[Sublime Text](https://www.sublimetext.com/)** sebagai model dasar.
 
 ---
 
