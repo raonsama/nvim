@@ -14,7 +14,7 @@ local function smart_save()
   if vim.fn.expand('%') == "" then
     local filename = vim.fn.input("Save as: ")
     if filename ~= "" then
-      vim.cmd("write " .. filename)
+      vim.cmd("write " .. vim.fn.fnameescape(filename))
       return true
     end
     return false  -- user cancel → batalkan close juga
@@ -35,7 +35,7 @@ keymap('i', '<C-s>', function()
 end, opts)
 
 -- ╔══════════════════════════════════════════════════════════╗
--- ║              [MANDATORY] SMART CLOSE (Ctrl+W)            ║
+-- ║              [MANDATORY] SMART CLOSE (Ctrl+Q)            ║
 -- ║  Tutup buffer dengan aman: pindah ke buffer lain dulu    ║
 -- ║  agar layout window tidak rusak.                         ║
 -- ╚══════════════════════════════════════════════════════════╝
@@ -132,16 +132,17 @@ keymap('v', '<C-_>', 'gc',  { remap = true })   -- Ctrl+/ Visual
 -- Simpan referensi handler ASLI sebelum di-override.
 -- Penting: jangan restore ke `print` — signature-nya berbeda
 -- dan akan konflik dengan plugin notifikasi (nvim-notify, noice).
-local _original_notify    = vim.notify
-local notifications_enabled = true
+local _original_notify = nil
+local notifications_enabled   = true
 
 keymap('n', '<leader>n', function()
   notifications_enabled = not notifications_enabled
   if notifications_enabled then
-    vim.notify = _original_notify
+    if _original_notify then vim.notify = _original_notify end
     vim.api.nvim_echo({{"󰂚 Notifikasi: ON", "Character"}}, false, {})
   else
-    vim.notify = function() end   -- buang semua notifikasi
+    _original_notify = vim.notify  -- ← tangkap di sini, setelah plugin load
+    vim.notify = function() end
     vim.api.nvim_echo({{"󰂛 Notifikasi: OFF", "WarningMsg"}}, false, {})
   end
 end, opts)
@@ -217,6 +218,24 @@ end, { noremap = true, silent = true, nowait = true })
 -- BUG FIX: keymap Esc di terminal mode untuk keluar ke Normal.
 -- Ini sering terhapus saat refactor — harus selalu ada.
 keymap('t', '<Esc>', [[<C-\><C-n>]], opts)
+
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║              [OPTIONAL] TERMINAL CLOSE GUARD             ║
+-- ║  Jika terminal buffer mati dari luar (proses crash,      ║
+-- ║  exit, atau dikill), reset state T agar <A-t>            ║
+-- ║  berikutnya tidak error dan bisa buka terminal baru.     ║
+-- ╚══════════════════════════════════════════════════════════╝
+vim.api.nvim_create_autocmd("TermClose", {
+  -- data.buf = buffer ID terminal yang baru saja ditutup.
+  -- Kita cek apakah itu buffer terminal milik kita (T.buf),
+  -- bukan terminal lain yang mungkin dibuka plugin lain.
+  callback = function(data)
+    if T.buf == data.buf then
+      T.buf = nil  -- hapus referensi buffer yang sudah mati
+      T.win = nil  -- hapus referensi window (sudah pasti invalid juga)
+    end
+  end,
+})
 
 -- ╔══════════════════════════════════════════════════════════╗
 -- ║              [OPTIONAL] PLUGIN MANAGER                   ║

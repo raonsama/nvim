@@ -13,10 +13,6 @@ local opt = vim.opt
 opt.swapfile   = false
 opt.backup     = false
 
--- Undo history tersimpan ke disk → bisa undo setelah Neovim ditutup.
-opt.undofile   = true
-opt.undolevels = 1000
-
 -- shada: batasi history yang disimpan agar file .shada tidak membengkak.
 -- '20  = simpan mark untuk 20 file terakhir
 -- <50  = simpan max 50 baris per register
@@ -46,18 +42,79 @@ opt.synmaxcol = 200
 opt.redrawtime = 1500
 
 -- ╔══════════════════════════════════════════════════════════╗
+-- ║              [MANDATORY] UNDO DIRECTORY                  ║
+-- ║  undofile=true menyimpan history undo ke disk, tapi      ║
+-- ║  tanpa undodir eksplisit, file undo (.nama.lua.~undo~)   ║
+-- ║  disimpan di sebelah file asli → mengotori project.      ║
+-- ║  Kita arahkan ke folder khusus di dalam data Neovim.     ║
+-- ╚══════════════════════════════════════════════════════════╝
+
+-- stdpath("data") di Termux → ~/.local/share/nvim
+-- Hasil akhir undodir    → ~/.local/share/nvim/undo/
+local undodir = vim.fn.stdpath("data") .. "/undo"
+
+-- Buat folder jika belum ada.
+-- "p" = buat parent folder sekaligus jika diperlukan (seperti mkdir -p)
+vim.fn.mkdir(undodir, "p")
+
+-- Undo history tersimpan ke disk → bisa undo setelah Neovim ditutup.
+opt.undofile   = true
+opt.undolevels = 1000
+opt.undodir = undodir  -- arahkan semua file undo ke sini
+
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║              [OPTIONAL] LAZYREDRAW SAAT MACRO            ║
+-- ║  Saat merekam/menjalankan macro, Neovim menggambar       ║
+-- ║  ulang layar setiap langkah — sangat berat di ARM.       ║
+-- ║  Solusi: bekukan layar selama macro, gambar sekali       ║
+-- ║  saat selesai.                                           ║
+-- ╚══════════════════════════════════════════════════════════╝
+
+-- PENTING: jangan set lazyredraw=true secara global karena
+-- bisa menyebabkan artefak visual di plugin seperti lazy.nvim,
+-- telescope, dan nvim-tree. Aktifkan HANYA saat macro berjalan.
+opt.lazyredraw = false
+
+vim.api.nvim_create_autocmd("RecordingEnter", {
+  -- Tembak saat mulai merekam macro (tekan q + huruf)
+  callback = function()
+    vim.opt.lazyredraw = true
+  end,
+})
+
+vim.api.nvim_create_autocmd("RecordingLeave", {
+  -- Tembak saat macro selesai direkam/dijalankan
+  -- Pastikan selalu dikembalikan ke false agar UI normal kembali
+  callback = function()
+    vim.opt.lazyredraw = false
+  end,
+})
+
+-- ╔══════════════════════════════════════════════════════════╗
 -- ║              [MANDATORY] PERLINDUNGAN FILE BESAR         ║
 -- ║  File > 500KB (vendor, minified) tidak perlu LSP/TS.     ║
 -- ╚══════════════════════════════════════════════════════════╝
 vim.api.nvim_create_autocmd("BufReadPre", {
   callback = function()
     local max_size = 500 * 1024  -- 500KB
-    local ok, stats = pcall(vim.uv.fs_stat, vim.api.nvim_buf_get_name(0))
+    local ok, stats = pcall(vim.uv.fs_stat, vim.fn.expand("<afile>"))  -- FIX #2
     if ok and stats and stats.size > max_size then
-      vim.opt_local.syntax   = "off"  -- matikan syntax highlight
-      vim.opt_local.filetype = ""     -- cegah filetype detection
-      vim.opt_local.undofile = false  -- tidak perlu undo history
-      vim.b.large_file       = true   -- flag untuk autocmd lain
+      vim.opt_local.syntax   = "off"
+      vim.opt_local.undofile = false
+      vim.b.large_file       = true
+
+      -- FIX #3: filetype="" di BufReadPre tidak efektif karena
+      -- deteksi filetype berjalan di BufReadPost (setelahnya).
+      -- Solusi: pasang autocmd FileType sekali pakai untuk buffer ini
+      -- agar syntax tetap mati setelah filetype di-set Neovim.
+      vim.api.nvim_create_autocmd("FileType", {
+        buffer   = 0,     -- hanya untuk buffer ini
+        once     = true,  -- hanya tembak sekali, lalu hapus diri sendiri
+        callback = function()
+          vim.opt_local.syntax = "off"
+        end,
+      })
+
       vim.notify("File besar terdeteksi — fitur berat dinonaktifkan", vim.log.levels.WARN)
     end
   end,
@@ -69,9 +126,9 @@ vim.api.nvim_create_autocmd("LspAttach", {
   callback = function(args)
     if vim.b[args.buf].large_file then
       vim.schedule(function()
-        -- vim.lsp.buf_detach_client(args.buf, args.data.client_id)
-        local client = vim.lsp.get_client_by_id(args.data.client_id)
-        if client then client:stop() end
+        vim.lsp.buf_detach_client(args.buf, args.data.client_id)
+        -- local client = vim.lsp.get_client_by_id(args.data.client_id)
+        -- if client then client:stop() end
       end)
     end
   end,
@@ -106,6 +163,13 @@ opt.splitbelow     = true   -- split horizontal → panel baru di bawah
 opt.showmode       = false  -- mode (INSERT/NORMAL) sudah di statusline
 opt.laststatus     = 3      -- satu statusline global (bukan per window)
 opt.signcolumn     = "yes"  -- kolom ikon selalu tampil (cegah layout geser)
+opt.ignorecase     = true   -- pencarian tidak case-sensitive secara default
+opt.smartcase      = true   -- TAPI jika ada huruf kapital → case-sensitive
+opt.hlsearch       = false  -- tidak highlight semua hasil pencarian (berisik)
+opt.incsearch      = true   -- highlight saat mengetik pola pencarian
+opt.winwidth       = 30    -- lebar minimum window aktif
+opt.winminwidth    = 10    -- lebar minimum window tidak aktif
+opt.equalalways    = false -- kamu yang kontrol ukuran split, bukan Neovim
 
 -- penting untuk performa rendering.
 -- Dengan wrap=true, baris panjang di-render karakter per karakter
@@ -189,17 +253,19 @@ opt.breakindent = true   -- wrapped line mengikuti level indent
 -- ╚══════════════════════════════════════════════════════════╝
 vim.api.nvim_create_autocmd("InsertEnter", {
   callback = function()
+    if vim.bo.buftype == "terminal" then return end
     -- relativenumber: recalculate semua nomor baris setiap ketikan → lag
     -- cursorline: redraw highlight baris setiap ketikan → lag
-    vim.opt.relativenumber = false
-    vim.opt.cursorline     = false
+    vim.opt_local.relativenumber = false
+    vim.opt_local.cursorline     = false
   end,
 })
 
 vim.api.nvim_create_autocmd("InsertLeave", {
   callback = function()
-    vim.opt.relativenumber = true
-    vim.opt.cursorline     = true
+    if vim.bo.buftype == "terminal" then return end
+    vim.opt_local.relativenumber = true
+    vim.opt_local.cursorline     = true
   end,
 })
 
@@ -225,8 +291,10 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 -- ╚══════════════════════════════════════════════════════════╝
 vim.api.nvim_create_autocmd("BufDelete", {
   callback = function()
-    local bufs = vim.fn.getbufinfo({ buflisted = 1 })
-    if #bufs == 0 then vim.cmd("enew") end
+    vim.schedule(function()
+      local bufs = vim.fn.getbufinfo({ buflisted = 1 })
+      if #bufs == 0 then vim.cmd("enew") end
+    end)
   end,
 })
 
@@ -249,20 +317,16 @@ vim.api.nvim_create_autocmd("FocusLost", {
 
 -- ╔══════════════════════════════════════════════════════════╗
 -- ║              [OPTIONAL] TERMINAL AUTO INSERT             ║
--- ║  Otomatis masuk insert mode saat buka terminal buffer.   ║
--- ║  BufWinEnter dipilih (bukan BufEnter+WinEnter) agar      ║
--- ║  startinsert tidak dipanggil dua kali.                   ║
+-- ║  Otomatis masuk insert mode dan matikan dekorasi         ║
+-- ║  saat terminal dibuka.                                   ║
 -- ╚══════════════════════════════════════════════════════════╝
 vim.api.nvim_create_autocmd("TermOpen", {
   pattern  = "term://*",
-  callback = function() vim.cmd("startinsert") end,
-})
-
-vim.api.nvim_create_autocmd("TermOpen", {
   callback = function()
     vim.opt_local.number         = false
     vim.opt_local.relativenumber = false
     vim.opt_local.signcolumn     = "no"
+    vim.cmd("startinsert")
   end,
 })
 
