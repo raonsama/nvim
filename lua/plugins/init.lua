@@ -150,72 +150,29 @@ return {
       -- Setup Mason (UI untuk install LSP, linter, formatter)
       require("mason").setup({ ui = { border = "rounded" } })
 
-      -- ── CAPABILITIES (berlaku untuk SEMUA LSP) ───────────────
-      -- BUG FIX: capabilities HARUS di-set PERTAMA sebelum config server
-      -- manapun. Jika di-set setelah vim.lsp.config('intelephense',...),
-      -- intelephense bisa start tanpa capabilities CMP → autocomplete mati.
+     -- ── CAPABILITIES (berlaku untuk SEMUA LSP) ───────────────
       -- Wildcard '*' = base config untuk semua LSP yang akan attach.
+      -- HARUS di-set PERTAMA sebelum vim.lsp.config server manapun
+      -- agar capabilities CMP sudah aktif saat LSP pertama kali attach. 
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
       vim.lsp.config('*', { capabilities = capabilities })
 
-      -- ── KONFIGURASI INTELEPHENSE (PHP LSP) ──────────────────
-      vim.lsp.config('intelephense', {
-        settings = {
-          intelephense = {
-            files = {
-              exclude = {
-                "**/.git/**",           -- git internals
-                "**/node_modules/**",   -- JS dependencies
-                -- !! vendor TIDAK di-exclude sepenuhnya !!
-                -- Sebelumnya vendor di-exclude → intelephense tidak bisa
-                -- resolve tipe dari package (Laravel facades, Carbon, dll)
-                -- → muncul error "undefined type".
-                -- Solusi: exclude hanya subfolder yang benar-benar tidak berguna.
-                "**/vendor/**/test*/**",      -- test suite vendor (tidak dipakai)
-                "**/vendor/**/Tests/**",      -- test suite vendor
-                "**/vendor/**/spec/**",       -- spec vendor
-                "**/storage/**",              -- Laravel storage
-                "**/public/build/**",         -- asset build output
-                "**/public/hot/**",           -- Vite HMR files
-                "**/*.min.js",
-                "**/*.min.css",
-              },
-              maxSize = 1000000,
-            },
-            telemetry  = { enabled = false },
-            completion = {
-              fullyQualifyGlobalConstantsAndFunctions = false,
-            },
-            -- BUG FIX: tambahkan stubs untuk framework umum.
-            -- Stubs = type definition bawaan intelephense untuk package populer.
-            -- Ini yang menyelesaikan "undefined type" untuk Laravel, Carbon, dll
-            -- TANPA perlu intelephense membaca seluruh file vendor.
-            stubs = {
-              "apache", "bcmath", "bz2", "calendar", "com_dotnet",
-              "Core", "ctype", "curl", "date", "dba", "dom",
-              "enchant", "exif", "FFI", "fileinfo", "filter", "fpm",
-              "ftp", "gd", "gettext", "gmp", "hash", "iconv", "imap",
-              "intl", "json", "ldap", "libxml", "mbstring", "meta",
-              "mysqli", "oci8", "odbc", "openssl", "pcntl", "pcre",
-              "PDO", "pdo_ibm", "pdo_mysql", "pdo_pgsql", "pdo_sqlite",
-              "pgsql", "Phar", "posix", "pspell", "random", "readline",
-              "Reflection", "session", "shmop", "SimpleXML", "snmp",
-              "soap", "sockets", "sodium", "SPL", "sqlite3", "standard",
-              "superglobals", "sysvmsg", "sysvsem", "sysvshm", "tidy",
-              "tokenizer", "xml", "xmlreader", "xmlrpc", "xmlwriter",
-              "xsl", "Zend OPcache", "zip", "zlib",
-              -- Laravel & framework stubs
-              "wordpress", "phpunit",
-            },
-          },
-        },
+     -- ── KONFIGURASI PHPANTOM_LSP (PHP LSP) ──────────────────
+      -- phpantom_lsp: PHP LSP ultra-cepat ditulis dalam Rust.
+      -- Tidak via Mason (belum tersedia) → install manual:
+      --   cargo build --release && cp target/release/phpantom_lsp $PREFIX/bin/
+      vim.lsp.config('phpantom_lsp', {
+        cmd          = { "phpantom_lsp" },
+        filetypes    = { "php" },
+        root_markers = { "composer.json", ".git" },
       })
+      vim.lsp.enable('phpantom_lsp')
 
       -- ── AUTO-INSTALL LSP ─────────────────────────────────────
       -- Mason akan auto-install LSP yang belum ada saat pertama buka.
       -- automatic_enable=true (default) → LSP langsung aktif setelah install.
       require("mason-lspconfig").setup({
-        ensure_installed = { "intelephense", "ts_ls", "tailwindcss" },
+        ensure_installed = { "ts_ls", "tailwindcss" },
       })
 
       -- ── AUTOCOMPLETE (CMP) ───────────────────────────────────

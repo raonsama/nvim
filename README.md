@@ -1,7 +1,7 @@
 # 🏛️ Artefak — Neovim Config
 > Konfigurasi Neovim minimalis, cepat, dan stabil untuk **Termux / Android**.  
-> Dioptimalkan khusus untuk perangkat ARM (Huawei MatePad, tablet Android, dll).  
-> Config ini dibuat menggunakan **[Claude AI](https://claude.ai/)** dengan **[Sublime Text](https://www.sublimetext.com/)** sebagai model dasar.
+> Dioptimalkan khusus untuk perangkat ARM (Huawei MatePad 12X 2026, tablet Android, dll).  
+> Config ini dibuat menggunakan **[Claude AI](https://claude.ai/)** dengan **[Sublime Text](https://www.sublimetext.com/)** sebagai model dasar shortcut.
 
 ---
 
@@ -58,6 +58,23 @@
 | `Alt + T` | T | **Toggle Terminal** — tutup terminal, kembali ke editor |
 | `Esc` | T | **Normal Mode** — keluar dari insert mode di terminal |
 
+### AI (CodeCompanion + MCPHub)
+| Shortcut | Mode | Fungsi |
+| :--- | :---: | :--- |
+| `Space + aa` | N, V | **Actions** — buka menu aksi AI (explain, refactor, test, dll) |
+| `Space + ai` | N, V | **Chat** — buka/tutup jendela AI chat |
+| `Space + al` | N | **Laravel Chat** — buka chat Laravel + auto accept semua aksi AI |
+| `Space + am` | N | **Model** — pilih model AI yang digunakan |
+| `Space + ah` | N | **MCPHub** — buka UI manajemen MCP server |
+| `Space + at` | N | **Auto Mode** — toggle auto accept (on/off) tanpa perlu confirm |
+| `ga` | V | **Add** — tambahkan seleksi ke chat yang sedang terbuka |
+
+*Ketik `cc` di command line sebagai alias `CodeCompanion`.*
+
+> **Catatan Auto Mode (`Space + at`):**  
+> Saat ON → AI langsung jalankan semua perintah (buat file, edit, run artisan) tanpa tanya.  
+> Saat OFF → setiap aksi AI akan meminta konfirmasi user terlebih dahulu.
+
 ### System
 | Shortcut | Mode | Fungsi |
 | :--- | :---: | :--- |
@@ -87,6 +104,9 @@
 | `Comment.nvim` | Toggle komentar | BufRead |
 | `nvim-autopairs` | Auto-tutup bracket/quote | InsertEnter |
 | `lazygit.nvim` | UI git | Keymap |
+| `render-markdown.nvim` | Render markdown cantik di buffer | FileType |
+| `mcphub.nvim` | MCP client — manajemen MCP server | Startup |
+| `codecompanion.nvim` | AI chat & inline assist (OpenRouter) | Keymap |
 
 ---
 
@@ -96,14 +116,24 @@
 
 ```bash
 # Wajib
-pkg install neovim git ripgrep fd
+pkg install neovim git ripgrep fd nodejs
 
 # Untuk formatter
 npm install -g prettier                        # Prettier (JS/TS/CSS/HTML)
 composer global require laravel/pint           # Laravel Pint (PHP)
+
+# Untuk AI (MCPHub binary — auto-install saat plugin pertama dibuka)
+npm install -g mcp-hub@latest
+
+# Untuk AI (CodeCompanion via OpenRouter)
+export OPENROUTER_API_KEY="sk-or-..."         # Tambahkan ke ~/.bashrc atau ~/.zshrc
+
+# Untuk Laravel Boost (opsional, per project)
+composer require laravel/boost --dev
+php artisan boost:install
 ```
 
-> **Nerd Font** wajib dipasang di Termux agar ikon statusline dan git muncul dengan benar.  
+> **Nerd Font** wajib dipasang di Termux agar ikon plugin muncul dengan benar.  
 > Download di [nerdfonts.com](https://www.nerdfonts.com) lalu taruh di `~/.termux/font.ttf`.
 
 ### Clone & Setup
@@ -122,17 +152,60 @@ git clone https://github.com/raonsama/nvim ~/.config/nvim
 nvim
 ```
 
+### Setup Laravel Boost (per project)
+
+Untuk mengintegrasikan Laravel Boost dengan MCPHub di project Laravel:
+
+```bash
+# 1. Install Laravel Boost di project
+composer require laravel/boost --dev
+php artisan boost:install
+
+# 2. Buat file MCP config di root project
+mkdir -p .mcphub
+```
+
+Buat `.mcphub/servers.json`:
+```json
+{
+  "mcpServers": {
+    "laravel-boost": {
+      "command": "php",
+      "args": ["artisan", "boost:mcp"],
+      "autoStart": true
+    }
+  }
+}
+```
+
+Buka project di Neovim → tekan `Space + al` → AI siap dengan konteks Laravel penuh.
+
 ### Setup LSP & Formatter
 
-Setelah Neovim terbuka, install language server via Mason:
+**PHP LSP (phpantom_lsp)** — install manual via Cargo karena belum tersedia di Mason:
+
+```bash
+# Pastikan Rust sudah terinstall
+pkg install rust
+
+# Clone & build
+git clone https://github.com/AJenbo/phpantom_lsp
+cd phpantom_lsp
+cargo build --release
+cp target/release/phpantom_lsp $PREFIX/bin/
+
+# Jalankan composer di root project PHP agar resolusi class bekerja
+composer dump-autoload -o
+```
+
+**LSP lainnya** — install via Mason setelah Neovim terbuka:
 
 ```
 :Mason
 ```
 
 Cari dan install:
-- `intelephense` — PHP
-- `ts_ls` — TypeScript/JavaScript  
+- `ts_ls` — TypeScript/JavaScript
 - `tailwindcss` — Tailwind CSS
 
 ---
@@ -153,6 +226,7 @@ Beberapa keputusan teknis yang sengaja dibuat untuk performa di ARM:
 | Telescope pakai `fd` bukan `find` | `fd` jauh lebih cepat di filesystem Android |
 | Treesitter indent pakai cache | Tidak cek ulang parser/query setiap buka file |
 | Format on save dimatikan | Prettier/Pint bisa lag beberapa detik di ARM |
+| render-markdown sign dimatikan | Hemat kolom sign, mengurangi redraw |
 
 ---
 
@@ -166,12 +240,21 @@ Beberapa keputusan teknis yang sengaja dibuat untuk performa di ARM:
     │   ├── options.lua       # Semua vim.opt + autocmd dasar
     │   └── keymaps.lua       # Semua keymap global
     └── plugins/
-        └── init.lua          # Daftar & konfigurasi semua plugin
+        ├── init.lua          # Plugin utama (LSP, UI, treesitter, git, dll)
+        ├── ai.lua            # MCPHub + CodeCompanion (AI chat & agent)
+        └── markdown.lua      # render-markdown.nvim (render markdown global)
 ```
 
 ---
 
 ## 🩺 Troubleshooting
+
+**MCPHub error: `mcp-hub: Executable not found`**
+```bash
+npm install -g mcp-hub@latest
+# Pastikan npm bin ada di PATH:
+export PATH="$PATH:$(npm bin -g)"
+```
 
 **Error saat buka folder (`nvim .`)**
 ```bash
@@ -198,6 +281,14 @@ Pastikan formatter sudah terinstall dan bisa diakses dari Termux:
 ```bash
 prettier --version
 pint --version
+```
+
+**Laravel Boost tidak bisa start (`Parse error: Invalid JSON`)**  
+Pastikan tidak ada output PHP warnings/Xdebug ke stdout:
+```bash
+# Cek di root project Laravel
+php artisan mcp:start laravel-boost 2>error.log
+cat error.log  # jika ada isi, berarti ada warning yang mengotori JSON stream
 ```
 
 ---
