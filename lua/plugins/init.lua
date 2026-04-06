@@ -280,6 +280,8 @@ return {
             "%.git/.*",
             "storage/.*",
             "public/build/.*",
+            ".cursor/.*",
+            ".skills/.*",
             "%.min%.js",
             "%.min%.css",
             "%.lock",
