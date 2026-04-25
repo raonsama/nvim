@@ -214,21 +214,6 @@ return {
     event        = 'VeryLazy',
     dependencies = { 'nvim-tree/nvim-web-devicons' },
     config = function()
-      -- Komponen LSP: tampilkan nama client yang aktif
-      local function lsp_clients()
-        local clients = vim.lsp.get_clients({ bufnr = 0 })
-        if #clients == 0 then return '' end
-        local names = {}
-        for _, c in ipairs(clients) do
-          -- Hanya tampilkan jika bukan 'null-ls' atau 'copilot'
-          if c.name ~= 'null-ls' and c.name ~= 'copilot' then
-            table.insert(names, c.name)
-          end
-        end
-        if #names == 0 then return '' end
-        return '󰒍 ' .. table.concat(names, '+')
-      end
-
       -- Icon sesuai mode
       local mode_icons = {
         NORMAL   = '󱃖 ',
@@ -291,7 +276,6 @@ return {
 
           -- Kanan 1: LSP clients & Diagnostics
           lualine_x = {
-            { lsp_clients, color = { fg = '#89b4fa' }},
             {
               'diagnostics',
               sources  = { 'nvim_lsp' },
@@ -299,17 +283,36 @@ return {
               symbols  = { error = ' ', warn = ' ', info = ' ', hint = '󰠠 ' },
               colored  = true,
             },
+            { 'encoding' },
+            {
+              'fileformat',
+              symbols = {
+                unix = ' unix', -- e712
+                dos = ' dos',  -- e70f
+                mac = ' mac',  -- e711
+              }
+            },
+            {
+              'lsp_status',
+              icon = '󰒍', -- f013
+              symbols = {
+                -- Delimiter inserted between LSP names:
+                separator = ',',
+              },
+              -- List of LSP names to ignore (e.g., `null-ls`):
+              ignore_lsp = { 'null-ls', 'copilot' },
+              color = { fg = '#89b4fa' },
+            },
           },
 
           -- Kanan 2: Filetype dengan icon
           lualine_y = {
-            { 'filetype', icon_only = false },
+            { 'location' },
           },
 
           -- Kanan 3: Posisi kursor
           lualine_z = {
-            { 'location' },
-            { 'progress' },
+            { 'filetype', icon_only = false },
           },
         },
 

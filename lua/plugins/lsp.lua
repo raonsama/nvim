@@ -67,55 +67,55 @@ return {
 
       -- ── Step 2: Konfigurasi setiap server LSP ──────────────
 
-      -- ── PHP — Intelephense ─────────────────────────────────
-      -- Install via Mason: :MasonInstall intelephense
-      vim.lsp.config('intelephense', {
-        cmd       = { 'intelephense', '--stdio' },
+      -- ── PHP — Phpactor ─────────────────────────────────────
+      -- Install via Mason: :MasonInstall phpactor
+      vim.lsp.config('phpactor', {
+        cmd       = { 'phpactor', 'language-server' },
         filetypes = { 'php' },
         root_markers = { 'composer.json', '.git', 'artisan' },
-        init_options = {
-          -- Daftarkan lisensi premium jika ada (opsional)
-          -- licenceKey = 'LICENCE_KEY_ANDA',
-          globalStoragePath = vim.fn.stdpath('data') .. '/intelephense',
-        },
-        settings = {
-          intelephense = {
-            files = {
-              exclude = {
-                "**/.git/**",
-                "**/node_modules/**",
-                "**/vendor/**/test*/**",
-                "**/vendor/**/Tests/**",
-                "**/vendor/**/spec/**",
-                "**/storage/**",
-                "**/public/build/**",
-                "**/public/hot/**",
-                "**/*.min.js",
-                "**/*.min.css",
-              },
-              -- Perbesar batas ukuran file PHP
-              maxSize      = 600000,
-              associations = { '*.php', '*.blade.php', '*.phtml' },
-            },
-            stubs = {
-              "apache", "bcmath", "bz2", "calendar", "Core", "ctype", "curl", "date", 
-              "dom", "fileinfo", "filter", "gd", "hash", "iconv", "intl", "json", 
-              "libxml", "mbstring", "openssl", "pcre", "PDO", "pdo_mysql", "Phar", 
-              "Reflection", "session", "SimpleXML", "SPL", "standard", "tokenizer", 
-              "xml", "xmlreader", "xmlwriter", "zip", "zlib", "wordpress", "phpunit",
-            },
-            -- environment = {
-            --   phpVersion = '8.5.1', -- Sesuaikan versi PHP Anda
-            -- },
-            -- format = { enable = false }, -- Gunakan intelephense formatter
-            diagnostics = { enable = true },
-            completion = {
-              insertUseDeclaration  = true, -- Auto-import use statement
-              fullyQualifyGlobalConstantsAndFunctions = false,
-            },
-            phpdoc = { textFormat = 'text' },
-          },
-        },
+        -- init_options = {
+        --   -- Daftarkan lisensi premium jika ada (opsional)
+        --   -- licenceKey = 'LICENCE_KEY_ANDA',
+        --   globalStoragePath = vim.fn.stdpath('data') .. '/intelephense',
+        -- },
+        -- settings = {
+        --   intelephense = {
+        --     files = {
+        --       exclude = {
+        --         "**/.git/**",
+        --         "**/node_modules/**",
+        --         "**/vendor/**/test*/**",
+        --         "**/vendor/**/Tests/**",
+        --         "**/vendor/**/spec/**",
+        --         "**/storage/**",
+        --         "**/public/build/**",
+        --         "**/public/hot/**",
+        --         "**/*.min.js",
+        --         "**/*.min.css",
+        --       },
+        --       -- Perbesar batas ukuran file PHP
+        --       maxSize      = 600000,
+        --       associations = { '*.php', '*.blade.php', '*.phtml' },
+        --     },
+        --     stubs = {
+        --       "apache", "bcmath", "bz2", "calendar", "Core", "ctype", "curl", "date", 
+        --       "dom", "fileinfo", "filter", "gd", "hash", "iconv", "intl", "json", 
+        --       "libxml", "mbstring", "openssl", "pcre", "PDO", "pdo_mysql", "Phar", 
+        --       "Reflection", "session", "SimpleXML", "SPL", "standard", "tokenizer", 
+        --       "xml", "xmlreader", "xmlwriter", "zip", "zlib", "wordpress", "phpunit",
+        --     },
+        --     -- environment = {
+        --     --   phpVersion = '8.5.1', -- Sesuaikan versi PHP Anda
+        --     -- },
+        --     -- format = { enable = false }, -- Gunakan intelephense formatter
+        --     diagnostics = { enable = true },
+        --     completion = {
+        --       insertUseDeclaration  = true, -- Auto-import use statement
+        --       fullyQualifyGlobalConstantsAndFunctions = false,
+        --     },
+        --     phpdoc = { textFormat = 'text' },
+        --   },
+        -- },
       })
 
       -- ── TypeScript — typescript-language-server ────────────
@@ -301,7 +301,7 @@ return {
       require('mason-lspconfig').setup({
         -- Server yang diinstall via mason otomatis
         ensure_installed = {
-          'intelephense',   -- PHP
+          'phpactor',       -- PHP
           'ts_ls',          -- TypeScript/JavaScript
           'svelte',         -- Svelte
           'tailwindcss',    -- TailwindCSS
