@@ -160,6 +160,17 @@ map('v', 'p', '"_dP', 'Paste tanpa yank ulang')
 -- Jangan yank saat delete karakter tunggal
 map({ 'n', 'v' }, 'x', '"_x', 'Hapus karakter (tanpa yank)')
 
+-- Delete (d, D) -> Black hole register
+map({'n', 'v'}, 'd', '"_d')
+map({'n', 'v'}, 'D', '"_D')
+
+-- Change (c, C) -> Black hole register
+map({'n', 'v'}, 'c', '"_c')
+map({'n', 'v'}, 'C', '"_C')
+
+-- Delete single char (x) -> Black hole register
+map({'n', 'v'}, 'x', '"_x')
+
 -- Pencarian lebih baik: pastikan hasil pencarian ada di tengah layar
 map('n', 'n',  'nzzzv',  'Next hasil pencarian (center)')
 map('n', 'N',  'Nzzzv',  'Prev hasil pencarian (center)')

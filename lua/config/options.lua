@@ -82,16 +82,17 @@ opt.autoread     = true   -- Reload file jika berubah di luar Neovim
 
 -- ── Clipboard Termux ──────────────────────────────────────────
 -- Gunakan termux-clipboard-get/set jika tersedia
-if vim.fn.executable('termux-clipboard-get') == 1 then
-  vim.g.clipboard = {
-    name  = 'termux-clipboard',
-    copy  = { ['+'] = 'termux-clipboard-set', ['*'] = 'termux-clipboard-set' },
-    paste = { ['+'] = 'termux-clipboard-get', ['*'] = 'termux-clipboard-get' },
-    cache_enabled = 0,
-  }
-else
-  opt.clipboard = 'unnamedplus' -- Fallback clipboard sistem
-end
+-- if vim.fn.executable('termux-clipboard-get') == 1 then
+--   vim.g.clipboard = {
+--     name  = 'termux-clipboard',
+--     copy  = { ['+'] = 'termux-clipboard-set', ['*'] = 'termux-clipboard-set' },
+--     paste = { ['+'] = 'termux-clipboard-get', ['*'] = 'termux-clipboard-get' },
+--     cache_enabled = 0,
+--   }
+-- else
+--   opt.clipboard = 'unnamedplus' -- Fallback clipboard sistem
+-- end
+opt.clipboard = 'unnamedplus' -- Fallback clipboard sistem
 
 -- ── Completion ────────────────────────────────────────────────
 opt.completeopt = { 'menu', 'menuone', 'noselect' }

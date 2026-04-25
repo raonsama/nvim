@@ -62,7 +62,7 @@ return {
         'lua', 'vimdoc', 'vim',          -- Neovim itself
         'php', 'phpdoc', 'blade',        -- PHP
         'go', 'gomod', 'gosum',          -- Go
-        'svelte', 'html', 'css',         -- Svelte/Web
+        'svelte', 'html', 'css', 'vue',  -- Svelte/Web
         'typescript', 'javascript', 'tsx', 'jsdoc', -- TypeScript
         'rust', 'ron',                   -- Rust
         'json', 'yaml', 'toml',          -- Config files

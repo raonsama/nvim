@@ -305,6 +305,7 @@ return {
           'ts_ls',          -- TypeScript/JavaScript
           'svelte',         -- Svelte
           'tailwindcss',    -- TailwindCSS
+          'vue_ls',         -- Vue
           -- 'lua_ls',         -- Lua (untuk konfigurasi Neovim)
           -- gopls & rust_analyzer diinstall via termux pkg
         },
