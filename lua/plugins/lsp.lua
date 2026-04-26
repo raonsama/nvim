@@ -67,55 +67,55 @@ return {
 
       -- ── Step 2: Konfigurasi setiap server LSP ──────────────
 
-      -- ── PHP — Phpactor ─────────────────────────────────────
-      -- Install via Mason: :MasonInstall phpactor
-      vim.lsp.config('phpactor', {
-        cmd       = { 'phpactor', 'language-server' },
+      -- ── PHP — Intelephense ─────────────────────────────────
+      -- Install via Mason: :MasonInstall intelephense
+      vim.lsp.config('intelephense', {
+        cmd       = { 'intelephense', '--stdio' },
         filetypes = { 'php' },
         root_markers = { 'composer.json', '.git', 'artisan' },
-        -- init_options = {
-        --   -- Daftarkan lisensi premium jika ada (opsional)
-        --   -- licenceKey = 'LICENCE_KEY_ANDA',
-        --   globalStoragePath = vim.fn.stdpath('data') .. '/intelephense',
-        -- },
-        -- settings = {
-        --   intelephense = {
-        --     files = {
-        --       exclude = {
-        --         "**/.git/**",
-        --         "**/node_modules/**",
-        --         "**/vendor/**/test*/**",
-        --         "**/vendor/**/Tests/**",
-        --         "**/vendor/**/spec/**",
-        --         "**/storage/**",
-        --         "**/public/build/**",
-        --         "**/public/hot/**",
-        --         "**/*.min.js",
-        --         "**/*.min.css",
-        --       },
-        --       -- Perbesar batas ukuran file PHP
-        --       maxSize      = 600000,
-        --       associations = { '*.php', '*.blade.php', '*.phtml' },
-        --     },
-        --     stubs = {
-        --       "apache", "bcmath", "bz2", "calendar", "Core", "ctype", "curl", "date", 
-        --       "dom", "fileinfo", "filter", "gd", "hash", "iconv", "intl", "json", 
-        --       "libxml", "mbstring", "openssl", "pcre", "PDO", "pdo_mysql", "Phar", 
-        --       "Reflection", "session", "SimpleXML", "SPL", "standard", "tokenizer", 
-        --       "xml", "xmlreader", "xmlwriter", "zip", "zlib", "wordpress", "phpunit",
-        --     },
-        --     -- environment = {
-        --     --   phpVersion = '8.5.1', -- Sesuaikan versi PHP Anda
-        --     -- },
-        --     -- format = { enable = false }, -- Gunakan intelephense formatter
-        --     diagnostics = { enable = true },
-        --     completion = {
-        --       insertUseDeclaration  = true, -- Auto-import use statement
-        --       fullyQualifyGlobalConstantsAndFunctions = false,
-        --     },
-        --     phpdoc = { textFormat = 'text' },
-        --   },
-        -- },
+        init_options = {
+          -- Daftarkan lisensi premium jika ada (opsional)
+          -- licenceKey = 'LICENCE_KEY_ANDA',
+          globalStoragePath = vim.fn.stdpath('data') .. '/intelephense',
+        },
+        settings = {
+          intelephense = {
+            files = {
+              exclude = {
+                "**/.git/**",
+                "**/node_modules/**",
+                "**/vendor/**/test*/**",
+                "**/vendor/**/Tests/**",
+                "**/vendor/**/spec/**",
+                "**/storage/**",
+                "**/public/build/**",
+                "**/public/hot/**",
+                "**/*.min.js",
+                "**/*.min.css",
+              },
+              -- Perbesar batas ukuran file PHP
+              maxSize      = 600000,
+              associations = { '*.php', '*.blade.php', '*.phtml' },
+            },
+            stubs = {
+              "apache", "bcmath", "bz2", "calendar", "Core", "ctype", "curl", "date", 
+              "dom", "fileinfo", "filter", "gd", "hash", "iconv", "intl", "json", 
+              "libxml", "mbstring", "openssl", "pcre", "PDO", "pdo_mysql", "Phar", 
+              "Reflection", "session", "SimpleXML", "SPL", "standard", "tokenizer", 
+              "xml", "xmlreader", "xmlwriter", "zip", "zlib", "wordpress", "phpunit",
+            },
+            -- environment = {
+            --   phpVersion = '8.5.1', -- Sesuaikan versi PHP Anda
+            -- },
+            -- format = { enable = false }, -- Gunakan intelephense formatter
+            diagnostics = { enable = true },
+            completion = {
+              insertUseDeclaration  = true, -- Auto-import use statement
+              fullyQualifyGlobalConstantsAndFunctions = false,
+            },
+            phpdoc = { textFormat = 'text' },
+          },
+        },
       })
 
       -- ── TypeScript — typescript-language-server ────────────
@@ -301,7 +301,7 @@ return {
       require('mason-lspconfig').setup({
         -- Server yang diinstall via mason otomatis
         ensure_installed = {
-          'phpactor',       -- PHP
+          'intelephense',   -- PHP
           'ts_ls',          -- TypeScript/JavaScript
           'svelte',         -- Svelte
           'tailwindcss',    -- TailwindCSS
@@ -626,6 +626,36 @@ return {
           ghost_text = { hl_group = 'Comment' }, -- Preview ghost text
         },
       })
+    end,
+  },
+
+  -- ──────────────────────────────────────────────────────────
+  -- Namespace Resolver
+  -- ──────────────────────────────────────────────────────────
+  {  -- lazy
+    'ccaglak/namespace.nvim',
+    keys = {
+        { "<leader>pa", "<cmd>Php classes<cr>", desc="Import PHP Classes"},
+        { "<leader>pc", "<cmd>Php class<cr>", desc="Import PHP Class"},
+        { "<leader>pn", "<cmd>Php namespace<cr>", desc="PHP Namespace"},
+        { "<leader>ps", "<cmd>Php sort<cr>", desc="Sort PHP Classes"},
+    },
+    -- dependencies = {
+    --     "ccaglak/phptools.nvim", -- optional
+    --     "ccaglak/larago.nvim", -- optional
+    -- }
+    config = function()
+    require('namespace').setup({
+      ui = true, -- default: true -- false only if you want to use your own ui
+      cacheOnload = false, -- default: false -- cache composer.json on load
+      dumpOnload = false, -- default: false -- dump composer.json on load
+      sort = {
+        on_save = false, -- default: false -- sorts on every search
+        sort_type = 'length_desc', -- default: natural -- seam like what pint is sorting
+        --  ascending -- descending -- length_asc
+        -- length_desc -- natural -- case_insensitive
+      },
+    })
     end,
   },
 }
