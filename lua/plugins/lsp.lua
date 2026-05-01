@@ -1,4 +1,4 @@
--- ~/.config/nvim/lua/plugins/intelephense.lua
+-- ~/.config/nvim/lua/plugins/lsp.lua
 return {
   "neovim/nvim-lspconfig",
   opts = {
@@ -24,9 +24,12 @@ return {
                 "**/*.min.css",
               },
             },
+            telemetry = { enabled = false },
           },
         },
       },
+      lua_ls = false,
+      stylua = { mason = false },
     },
   },
   {
