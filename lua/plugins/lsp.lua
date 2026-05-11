@@ -28,7 +28,7 @@ return {
           },
         },
       },
-      lua_ls = false,
+      lua_ls = { mason = false },
       stylua = { mason = false },
     },
   },
